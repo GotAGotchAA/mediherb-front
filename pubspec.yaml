@@ -16,7 +16,7 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.0.16
-  selenium: ^4.0.0  # check for the latest version
+  shared_preferences: ^2.1.1
   http: ^1.2.2                # Add the HTTP package for API requests
   flutter_secure_storage: ^5.0.2  # Add secure storage for storing JWT tokens
   provider: ^6.0.5             # Optional: Use provider for state management, if needed

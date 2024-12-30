@@ -13,9 +13,10 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _fullNameController = TextEditingController();
 
   // Function to handle registration
   Future<void> _register() async {
@@ -24,8 +25,9 @@ class _RegisterPageState extends State<RegisterPage> {
       final String apiUrl = 'http://localhost:8005/auth/signup';
 
       // Get form data
-      final String username = _usernameController.text;
+      final String email = _emailController.text;
       final String password = _passwordController.text;
+      final String fullName = _fullNameController.text;
 
       try {
         // Make the POST request
@@ -33,8 +35,9 @@ class _RegisterPageState extends State<RegisterPage> {
           Uri.parse(apiUrl),
           headers: {'Content-Type': 'application/json'},
           body: json.encode({
-            'username': username,
+            'email': email,
             'password': password,
+            'fullName': fullName,
           }),
         );
 
@@ -50,9 +53,13 @@ class _RegisterPageState extends State<RegisterPage> {
             MaterialPageRoute(builder: (context) => const LoginPage()),
           );
         } else {
-          // Handle API error (e.g., username already exists)
+          // Handle API error
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Registration failed. Please try again.')),
+            SnackBar(
+              content: Text(
+                'Registration failed: ${json.decode(response.body)['message'] ?? 'Unknown error'}',
+              ),
+            ),
           );
         }
       } catch (e) {
@@ -76,35 +83,15 @@ class _RegisterPageState extends State<RegisterPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'Mediherb',
-                      style: TextStyle(
-                        fontSize: 28.0,
-                        fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 25, 61, 14),
-                        fontFamily: 'CustomFont',
-                      ),
-                    ),
-                    const SizedBox(width: 8.0),
-                    SvgPicture.asset(
-                      'assets/icons/plant.svg',
-                      height: 28.0,
-                      width: 28.0,
-                      color: Color.fromARGB(255, 25, 61, 14),
-                    ),
-                  ],
-                ),
+                SvgPicture.asset('assets/register.svg', height: 150),
                 const SizedBox(height: 20.0),
                 TextFormField(
-                  controller: _usernameController,
-                  keyboardType: TextInputType.text,
-                  style: const TextStyle(color: Color.fromARGB(255, 25, 61, 14)),
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: const TextStyle(color: Colors.black87),
                   decoration: InputDecoration(
-                    labelText: 'Username',
-                    labelStyle: const TextStyle(color: Color.fromARGB(255, 25, 61, 14)),
+                    labelText: 'Email',
+                    prefixIcon: const Icon(Icons.email, color: Colors.black54),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8.0),
                       borderSide: const BorderSide(color: Colors.green, width: 2.0),
@@ -113,11 +100,37 @@ class _RegisterPageState extends State<RegisterPage> {
                       borderRadius: BorderRadius.circular(8.0),
                       borderSide: const BorderSide(color: Colors.black54),
                     ),
-                    prefixIcon: const Icon(Icons.person, color: Colors.black54),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your username';
+                      return 'Please enter your email';
+                    }
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16.0),
+                TextFormField(
+                  controller: _fullNameController,
+                  keyboardType: TextInputType.text,
+                  style: const TextStyle(color: Colors.black87),
+                  decoration: InputDecoration(
+                    labelText: 'Full Name',
+                    prefixIcon: const Icon(Icons.person, color: Colors.black54),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: const BorderSide(color: Colors.green, width: 2.0),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: const BorderSide(color: Colors.black54),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your full name';
                     }
                     return null;
                   },
@@ -126,19 +139,18 @@ class _RegisterPageState extends State<RegisterPage> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
-                  style: const TextStyle(color: Color.fromARGB(255, 25, 61, 14)),
+                  style: const TextStyle(color: Colors.black87),
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    labelStyle: const TextStyle(color: Color.fromARGB(255, 25, 61, 14)),
+                    prefixIcon: const Icon(Icons.lock, color: Colors.black54),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8.0),
                       borderSide: const BorderSide(color: Colors.green, width: 2.0),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8.0),
-                      borderSide: const BorderSide(color: Colors.black54, width: 1.5),
+                      borderSide: const BorderSide(color: Colors.black54),
                     ),
-                    prefixIcon: const Icon(Icons.lock, color: Colors.black54),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -154,14 +166,18 @@ class _RegisterPageState extends State<RegisterPage> {
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: true,
-                  style: const TextStyle(color: Color.fromARGB(255, 25, 61, 14)),
+                  style: const TextStyle(color: Colors.black87),
                   decoration: InputDecoration(
                     labelText: 'Confirm Password',
-                    labelStyle: const TextStyle(color: Color.fromARGB(255, 25, 61, 14)),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
                     prefixIcon: const Icon(Icons.lock, color: Colors.black54),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: const BorderSide(color: Colors.green, width: 2.0),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: const BorderSide(color: Colors.black54),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -184,13 +200,10 @@ class _RegisterPageState extends State<RegisterPage> {
                         borderRadius: BorderRadius.circular(8.0),
                       ),
                       backgroundColor: Colors.green,
-                      textStyle: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
                     ),
                     child: const Text(
                       'Register',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.white, fontSize: 16.0),
                     ),
                   ),
                 ),

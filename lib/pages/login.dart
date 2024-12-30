@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'register.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:convert';  // Import for JSON decoding
-import 'package:http/http.dart' as http;  // Import the http package
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Replace HomePage with the desired page to navigate to after login
+import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,44 +18,68 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
   // Function to perform the API login request
   Future<bool> loginApi(String email, String password) async {
-    final url = Uri.parse('https://localhost:8005/auth/login');  // Replace with your API URL
+    final url = Uri.parse('http://localhost:8005/auth/login'); // Replace with your API URL
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'email': email,
-        'password': password,
-      }),
-    );
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'password': password,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      // Handle success: Parse the response body (if needed)
-      var data = json.decode(response.body);
-      print('Login successful: ${data}');
-      return true;  // Returning true for successful login
-    } else {
-      // Handle error
-      print('Login failed: ${response.body}');
-      return false;  // Returning false for failed login
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        String token = data['token'];
+        int expiresIn = data['expiresIn'];
+
+        // Log the token for debugging purposes
+        print('Token received: $token');
+
+        // Save token in local storage
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('authToken', token);
+        await prefs.setInt('tokenExpiry', DateTime.now().millisecondsSinceEpoch + expiresIn * 1000);
+
+        return true;
+      } else {
+        var errorData = json.decode(response.body);
+        String errorMessage = errorData['message'] ?? 'Login failed';
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      print('Login error: $e');
+      return false;
     }
   }
 
-  // Handle login when form is validated
   void _login() async {
     if (_formKey.currentState!.validate()) {
-      // Perform login action here (e.g., API call, authentication)
+      setState(() {
+        _isLoading = true;
+      });
+
       bool success = await loginApi(_emailController.text, _passwordController.text);
-      
+
+      setState(() {
+        _isLoading = false;
+      });
+
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logged in successfully with: ${_emailController.text}')),
+          const SnackBar(content: Text('Logged in successfully!')),
         );
-        // Navigate to the next page (e.g., Dashboard)
-        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DashboardPage()));
+        // Navigate to the home page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) =>  HomePage()),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login failed! Please check your credentials')),
@@ -116,10 +143,6 @@ class _LoginPageState extends State<LoginPage> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
                     }
-                    if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\$')
-                        .hasMatch(value)) {
-                      return 'Please enter a valid email';
-                    }
                     return null;
                   },
                 ),
@@ -155,7 +178,7 @@ class _LoginPageState extends State<LoginPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _login,
+                    onPressed: _isLoading ? null : _login,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
                       shape: RoundedRectangleBorder(
@@ -166,35 +189,9 @@ class _LoginPageState extends State<LoginPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    child: const Text(
-                      'Login',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16.0),
-                TextButton(
-                  onPressed: () {
-                    // Handle forgotten password logic here
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Forgot Password tapped!')),
-                    );
-                  },
-                  child: const Text(
-                    'Forgot Password?',
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const RegisterPage()),
-                    );
-                  },
-                  child: const Text(
-                    "Don't Have An Account? Register",
-                    style: TextStyle(color: Colors.black54),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text('Login'),
                   ),
                 ),
               ],
