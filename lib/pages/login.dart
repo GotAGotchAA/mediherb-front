@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'register.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:convert';  // Import for JSON decoding
+import 'package:http/http.dart' as http;  // Import the http package
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -14,12 +16,48 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  void _login() {
+  // Function to perform the API login request
+  Future<bool> loginApi(String email, String password) async {
+    final url = Uri.parse('https://localhost:8005/auth/login');  // Replace with your API URL
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'email': email,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      // Handle success: Parse the response body (if needed)
+      var data = json.decode(response.body);
+      print('Login successful: ${data}');
+      return true;  // Returning true for successful login
+    } else {
+      // Handle error
+      print('Login failed: ${response.body}');
+      return false;  // Returning false for failed login
+    }
+  }
+
+  // Handle login when form is validated
+  void _login() async {
     if (_formKey.currentState!.validate()) {
       // Perform login action here (e.g., API call, authentication)
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Logging in with: ${_emailController.text}')),
-      );
+      bool success = await loginApi(_emailController.text, _passwordController.text);
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logged in successfully with: ${_emailController.text}')),
+        );
+        // Navigate to the next page (e.g., Dashboard)
+        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DashboardPage()));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login failed! Please check your credentials')),
+        );
+      }
     }
   }
 
@@ -39,21 +77,21 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                  'Mediherb',
-                  style: TextStyle(
-                    fontSize: 28.0,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 25, 61, 14),
-                    fontFamily: 'CustomFont',
-                  ),
-                ),
-                const SizedBox(width: 8.0,),
-                SvgPicture.asset(
-                  'assets/icons/plant.svg',
-                  height: 28.0,
-                  width: 28.0,
-                  color: Color.fromARGB(255, 25, 61, 14),
-                ),
+                      'Mediherb',
+                      style: TextStyle(
+                        fontSize: 28.0,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 25, 61, 14),
+                        fontFamily: 'CustomFont',
+                      ),
+                    ),
+                    const SizedBox(width: 8.0),
+                    SvgPicture.asset(
+                      'assets/icons/plant.svg',
+                      height: 28.0,
+                      width: 28.0,
+                      color: Color.fromARGB(255, 25, 61, 14),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20.0),
@@ -158,7 +196,7 @@ class _LoginPageState extends State<LoginPage> {
                     "Don't Have An Account? Register",
                     style: TextStyle(color: Colors.black54),
                   ),
-                )
+                ),
               ],
             ),
           ),

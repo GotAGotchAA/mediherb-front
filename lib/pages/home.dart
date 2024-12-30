@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:mediherb/models/category_model.dart';
-import 'package:mediherb/pages/login.dart';
+import 'package:mediherb/model/plant_model.dart'; // Import the Plant model
+import 'package:mediherb/api/api_service.dart'; // Import the API service
 
 class HomePage extends StatefulWidget {
   HomePage({super.key});
@@ -11,15 +11,31 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<CategoryModel> categories = [];
+  List<PlantModel> plants = [];
+  bool isLoading = false;
 
-  void _getCategories() {
-    categories = CategoryModel.getCategories();
+  @override
+  void initState() {
+    super.initState();
+    _getPlants();
+  }
+
+  // Fetch plants from the backend
+  Future<void> _getPlants() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    List<PlantModel> fetchedPlants = await ApiService.getAllPlants();
+
+    setState(() {
+      plants = fetchedPlants;
+      isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    _getCategories();
     return Scaffold(
       appBar: appBar(context),
       backgroundColor: const Color.fromRGBO(240, 246, 229, 1),
@@ -29,20 +45,23 @@ class _HomePageState extends State<HomePage> {
         children: [
           _searchBar(),
           SizedBox(height: 40),
-          _categorieSection(),
+          _plantSection(),
+          Spacer(),
+          _createPlantButton(),
         ],
       ),
     );
   }
 
-  Column _categorieSection() {
+  // Section to display all plants
+  Column _plantSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 20),
           child: Text(
-            'Category',
+            'Plants',
             style: TextStyle(
               color: Color.fromARGB(255, 25, 61, 14),
               fontSize: 18,
@@ -51,54 +70,49 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         SizedBox(height: 15),
-        Container(
-          height: 120,
-          color: const Color.fromRGBO(240, 246, 229, 1),
-          child: ListView.separated(
-            itemCount: categories.length,
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.only(left: 20, right: 20),
-            separatorBuilder: (context, index) => SizedBox(width: 25),
-            itemBuilder: (context, index) {
-              return Container(
-                width: 100,
-                decoration: BoxDecoration(
-                  color: categories[index].boxColor.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Container(
-                      width: 50,
-                      height: 50,
+        isLoading
+            ? Center(child: CircularProgressIndicator())
+            : Container(
+                height: 200,
+                child: ListView.builder(
+                  itemCount: plants.length,
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.only(left: 20, right: 20),
+                  itemBuilder: (context, index) {
+                    return Container(
+                      width: 120,
                       decoration: BoxDecoration(
-                        color: Color.fromRGBO(240, 246, 229, 1),
-                        shape: BoxShape.circle,
+                        color: Colors.green.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: SvgPicture.asset(categories[index].iconPath),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Placeholder for plant image (replace with actual image)
+                          Container(
+                            width: 50,
+                            height: 50,
+                            color: Colors.green,
+                          ),
+                          Text(
+                            plants[index].name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w400,
+                              color: Colors.black,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    Text(
-                      categories[index].name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w400,
-                        color: Colors.black,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-        ),
+              ),
       ],
     );
   }
 
+  // Search bar widget
   Container _searchBar() {
     return Container(
       margin: EdgeInsets.only(top: 40, left: 20, right: 20),
@@ -137,6 +151,23 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Create Plant Button
+  Padding _createPlantButton() {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: ElevatedButton(
+        onPressed: () {
+          // Navigate to the plant creation page (to be implemented)
+        },
+        child: Text('Create Plant'),
+        style: ElevatedButton.styleFrom(
+          padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+        ),
+      ),
+    );
+  }
+
+  // AppBar
   AppBar appBar(BuildContext context) {
     return AppBar(
       title: Row(
@@ -211,55 +242,44 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Drawer
   Drawer _buildDrawer() {
-  return Drawer(
-    child: Column(
-      children: [
-        // This will contain all the other ListTiles at the top
-        Expanded(
-          child: ListView(
-            padding: EdgeInsets.only(top: 38.0),
-            children: [
-              ListTile(
-                leading: Icon(Icons.home),
-                title: Text('Home'),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomePage()),
-                  );
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.info),
-                title: Text('About'),
-                onTap: () {
-                  // Navigate to About
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.contact_page),
-                title: Text('Contact'),
-                onTap: () {
-                  // Navigate to Contact
-                },
-              ),
-            ],
+    return Drawer(
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.only(top: 38.0),
+              children: [
+                ListTile(
+                  leading: Icon(Icons.home),
+                  title: Text('Home'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => HomePage()),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.info),
+                  title: Text('About'),
+                  onTap: () {
+                    // Navigate to About
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.contact_page),
+                  title: Text('Contact'),
+                  onTap: () {
+                    // Navigate to Contact
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-        // This is your ListTile at the bottom
-        ListTile(
-          leading: Icon(Icons.logout),
-          title: Text('Logout'),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginPage()),
-            );
-          },
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
   }
 }

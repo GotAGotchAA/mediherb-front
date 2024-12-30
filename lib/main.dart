@@ -4,18 +4,13 @@ import 'pages/home.dart';
 import 'pages/register.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MaterialApp(
+      home: HomePage(),
+      routes: {
+        '/home': (context) => HomePage(), // Define your HomePage
+      },
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: HomePage()
-    );
-  }
-}

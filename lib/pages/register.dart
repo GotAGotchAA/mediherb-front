@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'login.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -11,15 +13,54 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
-  void _register() {
+  // Function to handle registration
+  Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registering with: ${_emailController.text}')),
-      );
+      // API URL for registration
+      final String apiUrl = 'http://localhost:8005/auth/signup';
+
+      // Get form data
+      final String username = _usernameController.text;
+      final String password = _passwordController.text;
+
+      try {
+        // Make the POST request
+        final response = await http.post(
+          Uri.parse(apiUrl),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'username': username,
+            'password': password,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          // On success, show a success message and navigate to Login page
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Registration successful')),
+          );
+
+          // Navigate to Login page
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        } else {
+          // Handle API error (e.g., username already exists)
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Registration failed. Please try again.')),
+          );
+        }
+      } catch (e) {
+        // Handle connection error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 
@@ -38,49 +79,45 @@ class _RegisterPageState extends State<RegisterPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                     const Text(
-                  'Mediherb',
-                  style: TextStyle(
-                    fontSize: 28.0,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 25, 61, 14),
-                    fontFamily: 'CustomFont',
-                  ),
-                ),
-                const SizedBox(width: 8.0,),
-                SvgPicture.asset(
-                  'assets/icons/plant.svg',
-                  height: 28.0,
-                  width: 28.0,
-                  color: Color.fromARGB(255, 25, 61, 14),
-                ),
+                    const Text(
+                      'Mediherb',
+                      style: TextStyle(
+                        fontSize: 28.0,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 25, 61, 14),
+                        fontFamily: 'CustomFont',
+                      ),
+                    ),
+                    const SizedBox(width: 8.0),
+                    SvgPicture.asset(
+                      'assets/icons/plant.svg',
+                      height: 28.0,
+                      width: 28.0,
+                      color: Color.fromARGB(255, 25, 61, 14),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20.0),
                 TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  controller: _usernameController,
+                  keyboardType: TextInputType.text,
                   style: const TextStyle(color: Color.fromARGB(255, 25, 61, 14)),
                   decoration: InputDecoration(
-                    labelText: 'Email',
+                    labelText: 'Username',
                     labelStyle: const TextStyle(color: Color.fromARGB(255, 25, 61, 14)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8.0),
-                      borderSide:const BorderSide (color: Colors.green,  width: 2.0),
+                      borderSide: const BorderSide(color: Colors.green, width: 2.0),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8.0),
                       borderSide: const BorderSide(color: Colors.black54),
                     ),
-                    prefixIcon: const Icon(Icons.email, color: Colors.black54),
+                    prefixIcon: const Icon(Icons.person, color: Colors.black54),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\$')
-                        .hasMatch(value)) {
-                      return 'Please enter a valid email';
+                      return 'Please enter your username';
                     }
                     return null;
                   },
@@ -154,7 +191,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: const Text(
                       'Register',
                       style: TextStyle(color: Colors.white),
-                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16.0),
@@ -162,12 +199,12 @@ class _RegisterPageState extends State<RegisterPage> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => LoginPage()),
-                      );
+                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                    );
                   },
                   child: const Text(
                     'Already Have An Account? Log in',
-                    style: const TextStyle(color: Colors.black54),
+                    style: TextStyle(color: Colors.black54),
                   ),
                 ),
               ],
