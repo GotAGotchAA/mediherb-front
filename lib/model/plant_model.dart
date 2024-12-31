@@ -1,5 +1,3 @@
-// lib/model/plant_model.dart
-
 class PlantModel {
   final int id;
   final String name;
@@ -10,6 +8,7 @@ class PlantModel {
   final String interactions;
   final String region;
   final String category;
+  final double price; // Add the price field
 
   PlantModel({
     required this.id,
@@ -21,6 +20,7 @@ class PlantModel {
     required this.interactions,
     required this.region,
     required this.category,
+    required this.price, // Include it in the constructor
   });
 
   factory PlantModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +34,7 @@ class PlantModel {
       interactions: json['interactions'] ?? '',
       region: json['region'] ?? '',
       category: json['category'] ?? '',
+      price: (json['price'] as num).toDouble(), // Safely cast to double
     );
   }
 }

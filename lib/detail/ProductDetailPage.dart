@@ -54,7 +54,7 @@ class ProductDetailPage extends StatelessWidget {
             ),
             SizedBox(height: 20),
             Text(
-              '\$${Text("price")}',
+              '\$${plant.price.toStringAsFixed(2)}',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,

@@ -5,6 +5,7 @@ import 'pages/register.dart';
 import 'pages/categories_page.dart';
 import 'pages/search_page.dart';
 import 'pages/user_profile_page.dart';
+import 'pages/region_page.dart'; // Import the RegionPage
 
 void main() {
   runApp(
@@ -22,6 +23,7 @@ void main() {
         '/categories': (context) => CategoriesPage(),
         '/search': (context) => SearchPage(),
         '/profile': (context) => UserProfilePage(),
+        '/regions': (context) => RegionPage(), // Add the RegionPage route
       },
     ),
   );

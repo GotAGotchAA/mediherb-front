@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:mediherb/model/plant_model.dart';
-import 'package:mediherb/services/api_service.dart'; // Import ApiService
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:mediherb/detail/ProductDetailPage.dart'; // Import the ProductDetailPage
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';  // Import for JSON decoding
+import 'package:http/http.dart' as http;
+import 'package:mediherb/model/plant_model.dart';
+import 'package:mediherb/services/api_service.dart';
+import 'package:mediherb/detail/ProductDetailPage.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -11,12 +14,24 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<PlantModel> plants = [];
+  List<PlantModel> filteredPlants = [];
   bool isLoading = true;
+  TextEditingController _searchController = TextEditingController();
+  Map<String, dynamic>? userData;
 
   @override
   void initState() {
     super.initState();
     _getPlants();
+    _searchController.addListener(_filterPlants);
+    _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_filterPlants);
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _getPlants() async {
@@ -28,31 +43,65 @@ class _HomePageState extends State<HomePage> {
       List<PlantModel> fetchedPlants = await ApiService.getAllPlants();
       setState(() {
         plants = fetchedPlants;
+        filteredPlants = plants; // Initially, all plants are visible
         isLoading = false;
       });
     } catch (e) {
       setState(() {
         isLoading = false;
       });
-      // Handle error (e.g., show a snack bar or error message)
     }
+  }
+
+  Future<void> _loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('auth_token');
+    
+    if (token != null) {
+      final url = Uri.parse('http://localhost:8005/user/me');
+      
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        setState(() {
+          userData = json.decode(response.body);
+        });
+      }
+    }
+  }
+
+  void _filterPlants() {
+    String query = _searchController.text.toLowerCase();
+    setState(() {
+      filteredPlants = plants.where((plant) {
+        return plant.name.toLowerCase().contains(query) ||
+            plant.category.toLowerCase().contains(query);
+      }).toList();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Medicinal Plants',
-          style: TextStyle(color: Colors.green),
-        ),
+        title: Text('Medicinal Plants', style: TextStyle(color: Colors.green)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.menu, color: Colors.green),
-          onPressed: () {
-            Scaffold.of(context).openDrawer();
+        leading: Builder(
+          builder: (BuildContext context) {
+            return IconButton(
+              icon: Icon(Icons.menu, color: Colors.green),
+              onPressed: () {
+                Scaffold.of(context).openDrawer();
+              },
+            );
           },
         ),
         actions: [
@@ -62,13 +111,11 @@ class _HomePageState extends State<HomePage> {
               color: Colors.green,
               height: 20,
             ),
-            onPressed: () {
-              // Handle search action
-            },
+            onPressed: () {},
           ),
         ],
       ),
-      drawer: _buildDrawer(context), // Add the drawer
+      drawer: _buildDrawer(context),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: isLoading
@@ -77,6 +124,14 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSearchBar(),
+                  if (userData != null)
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        'Welcome, ${userData!['name']}!',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   SizedBox(height: 20),
                   _buildPlantList(),
                 ],
@@ -85,69 +140,55 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Build the drawer
   Widget _buildDrawer(BuildContext context) {
     return Drawer(
       child: Column(
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.green,
-            ),
+            decoration: BoxDecoration(color: Colors.green),
             child: Center(
               child: Text(
                 'Menu',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
               ),
             ),
           ),
-          ListTile(
-            leading: Icon(Icons.category, color: Colors.green),
-            title: Text('Categories'),
-            onTap: () {
-              Navigator.pushNamed(context, '/categories');
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.search, color: Colors.green),
-            title: Text('Search'),
-            onTap: () {
-              Navigator.pushNamed(context, '/search');
-            },
-          ),
-          Spacer(), // Pushes the Logout button to the bottom
-          ListTile(
-            leading: Icon(Icons.logout, color: Colors.red),
-            title: Text('Logout'),
-            onTap: () {
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-            },
-          ),
+          _buildDrawerItem(context, icon: Icons.home, text: 'Home', routeName: '/'),
+          _buildDrawerItem(context, icon: Icons.category, text: 'Categories', routeName: '/categories'),
+          _buildDrawerItem(context, icon: Icons.search, text: 'Search', routeName: '/search'),
+          _buildDrawerItem(context, icon: Icons.location_on, text: 'Region', routeName: '/regions'),
+          Spacer(),
+          Divider(),
+          _buildDrawerItem(context, icon: Icons.logout, text: 'Logout', routeName: '/login', isLogout: true),
         ],
       ),
     );
   }
 
-  // Search Bar Widget
+  Widget _buildDrawerItem(BuildContext context, {required IconData icon, required String text, required String routeName, bool isLogout = false}) {
+    return ListTile(
+      leading: Icon(icon, color: isLogout ? Colors.red : Colors.green),
+      title: Text(text, style: TextStyle(color: isLogout ? Colors.red : Colors.black)),
+      onTap: () {
+        if (isLogout) {
+          Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false);
+        } else {
+          Navigator.pushNamed(context, routeName);
+        }
+      },
+    );
+  }
+
   Widget _buildSearchBar() {
     return Container(
       margin: EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 10,
-            spreadRadius: 0,
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 10, spreadRadius: 0)],
       ),
       child: TextField(
+        controller: _searchController,
         decoration: InputDecoration(
           hintText: "Search for plants",
           hintStyle: TextStyle(color: Colors.grey),
@@ -166,11 +207,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Plant List Section
   Widget _buildPlantList() {
     return Expanded(
       child: GridView.builder(
-        itemCount: plants.length,
+        itemCount: filteredPlants.length,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 16,
@@ -178,79 +218,44 @@ class _HomePageState extends State<HomePage> {
           childAspectRatio: 0.7,
         ),
         itemBuilder: (context, index) {
-          final plant = plants[index];
+          final plant = filteredPlants[index];
           return GestureDetector(
             onTap: () {
-              // Navigate to the ProductDetailPage and pass the selected plant
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => ProductDetailPage(plant: plant),
-                ),
+                MaterialPageRoute(builder: (context) => ProductDetailPage(plant: plant)),
               );
             },
             child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 5,
               shadowColor: Colors.grey.withOpacity(0.2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Placeholder for plant image
                   Container(
                     height: 120,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                       color: Colors.green.withOpacity(0.3),
                     ),
-                    child: Center(
-                      child: Icon(
-                        Icons.image,
-                        color: Colors.white,
-                        size: 40,
-                      ),
-                    ),
+                    child: Center(child: Icon(Icons.image, color: Colors.white, size: 40)),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      plant.name,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
+                    child: Text(plant.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text(
-                      plant.category,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
+                    child: Text(plant.category, style: TextStyle(fontSize: 12, color: Colors.grey)),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '\$${Text("price")}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
-                        ),
-                        Icon(
-                          Icons.favorite_border,
-                          color: Colors.green,
-                        ),
+                        Text('\$${plant.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green)),
+                        Icon(Icons.favorite_border, color: Colors.green),
                       ],
                     ),
                   ),

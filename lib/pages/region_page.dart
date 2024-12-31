@@ -3,26 +3,30 @@ import 'package:mediherb/model/plant_model.dart';
 import 'package:mediherb/services/api_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mediherb/detail/ProductDetailPage.dart';
-import 'package:mediherb/pages/region_page.dart'; // Import the RegionPage
-import 'package:mediherb/pages/home_page.dart'; // Import the HomePage
+import 'dart:convert'; // For json decoding
+import 'package:http/http.dart' as http; // For HTTP requests
+import 'home_page.dart'; // Import the HomePage
 
-class CategoriesPage extends StatefulWidget {
+class RegionPage extends StatefulWidget {
   @override
-  _CategoriesPageState createState() => _CategoriesPageState();
+  _RegionPageState createState() => _RegionPageState();
 }
 
-class _CategoriesPageState extends State<CategoriesPage> {
+class _RegionPageState extends State<RegionPage> {
   List<PlantModel> plants = [];
   List<PlantModel> filteredPlants = [];
   bool isLoading = true;
-  String? selectedCategory;
+  String? selectedRegion; // For storing selected region
+  List<String> regions = []; // Will be populated dynamically from the API
 
   @override
   void initState() {
     super.initState();
     _getPlants();
+    _getRegions();
   }
 
+  // Fetching the list of plants
   Future<void> _getPlants() async {
     setState(() {
       isLoading = true;
@@ -43,31 +47,43 @@ class _CategoriesPageState extends State<CategoriesPage> {
     }
   }
 
-  void _filterPlantsByCategory(String? category) {
-    setState(() {
-      selectedCategory = category;
-      if (category == null || category.isEmpty) {
-        filteredPlants = plants; // Show all plants if no category is selected
+  // Fetch regions from the API
+  Future<void> _getRegions() async {
+    try {
+      final response = await http.get(Uri.parse('http://localhost:8005/api/plants/metadata'));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        setState(() {
+          regions = List<String>.from(data['regions'] ?? []); // Assuming response contains a 'regions' field
+        });
       } else {
-        filteredPlants = plants
-            .where((plant) => plant.category == category)
-            .toList(); // Filter plants by selected category
+        // Handle error response
+        print('Failed to load regions: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching regions: $e');
+    }
+  }
+
+  // Filter plants based on the selected region
+  void _filterPlantsByRegion(String? region) {
+    setState(() {
+      selectedRegion = region;
+      if (region != null) {
+        filteredPlants = plants.where((plant) => plant.region == region).toList();
+      } else {
+        filteredPlants = plants;
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get unique categories from plants for the dropdown
-    List<String> categories = plants
-        .map((plant) => plant.category)
-        .toSet()
-        .toList(); // Get distinct categories
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Categories',
+          'Regions',
           style: TextStyle(color: Colors.green),
         ),
         backgroundColor: Colors.white,
@@ -104,26 +120,10 @@ class _CategoriesPageState extends State<CategoriesPage> {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Dropdown to select category
-                  DropdownButton<String>(
-                    value: selectedCategory,
-                    hint: Text('Select Category'),
-                    onChanged: _filterPlantsByCategory,
-                    items: [
-                      DropdownMenuItem<String>(
-                        value: null,
-                        child: Text('All Categories'),
-                      ),
-                      ...categories.map((category) {
-                        return DropdownMenuItem<String>(
-                          value: category,
-                          child: Text(category),
-                        );
-                      }).toList(),
-                    ],
-                  ),
+                  // Dropdown for selecting region
+                  _buildRegionDropdown(),
                   SizedBox(height: 16),
-                  _buildCategoryList(),
+                  _buildPlantList(),
                 ],
               ),
       ),
@@ -152,8 +152,8 @@ class _CategoriesPageState extends State<CategoriesPage> {
           _buildDrawerItem(
             context,
             icon: Icons.home,
-            text: 'Home', // Home button
-            routeName: '/home', // Route to your home page
+            text: 'Home',
+            routeName: '/home', // Navigate to HomePage
           ),
           _buildDrawerItem(
             context,
@@ -163,15 +163,15 @@ class _CategoriesPageState extends State<CategoriesPage> {
           ),
           _buildDrawerItem(
             context,
-            icon: Icons.search,
-            text: 'Search',
-            routeName: '/search',
+            icon: Icons.location_on,
+            text: 'Regions',
+            routeName: '/regions',
           ),
           _buildDrawerItem(
             context,
-            icon: Icons.location_on,
-            text: 'Regions', // New "Region" button
-            routeName: '/regions', // Route to RegionPage
+            icon: Icons.search,
+            text: 'Search',
+            routeName: '/search',
           ),
           Spacer(),
           Divider(),
@@ -210,7 +210,26 @@ class _CategoriesPageState extends State<CategoriesPage> {
     );
   }
 
-  Widget _buildCategoryList() {
+  // Dropdown widget for selecting a region
+  Widget _buildRegionDropdown() {
+    return DropdownButton<String>(
+      value: selectedRegion,
+      hint: Text('Select Region'),
+      items: regions.map((String region) {
+        return DropdownMenuItem<String>(
+          value: region,
+          child: Text(region),
+        );
+      }).toList(),
+      onChanged: (String? newRegion) {
+        _filterPlantsByRegion(newRegion);
+      },
+      isExpanded: true,
+    );
+  }
+
+  // Displays the list of plants based on the selected region
+  Widget _buildPlantList() {
     return Expanded(
       child: GridView.builder(
         itemCount: filteredPlants.length,
@@ -268,7 +287,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     child: Text(
-                      plant.category,
+                      plant.region, // Display the region of the plant
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey,
