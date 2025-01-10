@@ -14,63 +14,127 @@ class ProductDetailPage extends StatelessWidget {
         title: Text(plant.name),
         backgroundColor: Colors.green,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Placeholder for plant image
             Container(
-              height: 200,
+              height: 120,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: Colors.green.withOpacity(0.3),
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.image,
-                  color: Colors.white,
-                  size: 100,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                image: DecorationImage(
+                  image: AssetImage('assets/images/plant_placeholder.png'),
+                  fit: BoxFit.cover,
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Text(
               plant.name,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
               'Category: ${plant.category}',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
-              'Description: ${plant.description}',
-              style: TextStyle(fontSize: 16),
+              'Region: ${plant.region}',
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
+            Text(
+              'Description',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              plant.description,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Properties',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              plant.properties,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Uses',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              plant.uses,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Precautions',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              plant.precautions,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Interactions',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              plant.interactions,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
             Text(
               '\$${plant.price.toStringAsFixed(2)}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Colors.green,
               ),
             ),
-            Spacer(),
-            ElevatedButton(
-              onPressed: () {
-                // Add to cart or any other action here
-              },
-              child: Text('Add to Cart'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  // Add to cart or any other action here
+                },
+                child: const Text('Add to Cart'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),

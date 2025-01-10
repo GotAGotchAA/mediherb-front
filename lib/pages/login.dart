@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:convert';  // Import for JSON decoding
 import 'package:http/http.dart' as http;  // Import the http package
 import 'home_page.dart';  // Import the HomePage
+import 'AdminPage.dart';  // Import the AdminPage
 import 'package:shared_preferences/shared_preferences.dart';  // For storing the token
 
 class LoginPage extends StatefulWidget {
@@ -36,9 +37,10 @@ class _LoginPageState extends State<LoginPage> {
       var data = json.decode(response.body);
       String token = data['token'];  // Assuming the token is inside the 'token' field
 
-      // Save the token in SharedPreferences
+      // Save the token, email in SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
       prefs.setString('auth_token', token);
+      prefs.setString('email', email);  // Store email for later use
 
       print('Login successful: ${data}');
       return true;  // Returning true for successful login
@@ -48,20 +50,52 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Handle login when form is validated
-  void _login() async {
-    if (_formKey.currentState!.validate()) {
-      bool success = await loginApi(_emailController.text, _passwordController.text);
-      
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logged in successfully with: ${_emailController.text}')),
+  // Function to get user by email and navigate based on the role
+  Future<void> getUserByEmailAndNavigate(String email) async {
+    final url = Uri.parse('http://localhost:8005/users/email/$email');  // Endpoint to get user by email
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      // Parse the response body and get the user's role
+      var data = json.decode(response.body);
+      String role = data['role'];  // Assuming the role is inside the 'role' field
+
+      // Save the role in SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setString('role', role);
+
+      // Navigate based on the role
+      if (role == 'ADMIN') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => AdminPage()),
         );
-        // Navigate to the HomePage after a successful login
+      } else {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
         );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to fetch user data!')),
+      );
+    }
+  }
+
+  // Handle login when form is validated
+  void _login() async {
+    if (_formKey.currentState!.validate()) {
+      bool success = await loginApi(_emailController.text, _passwordController.text);
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logged in successfully with: ${_emailController.text}')),
+        );
+
+        // Fetch user by email and navigate based on role
+        await getUserByEmailAndNavigate(_emailController.text);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login failed! Please check your credentials')),
@@ -182,18 +216,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 16.0),
-                TextButton(
-                  onPressed: () {
-                    // Handle forgotten password logic here
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Forgot Password tapped!')),
-                    );
-                  },
-                  child: const Text(
-                    'Forgot Password?',
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                ),
                 TextButton(
                   onPressed: () {
                     Navigator.push(

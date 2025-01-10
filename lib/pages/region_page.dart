@@ -167,12 +167,6 @@ class _RegionPageState extends State<RegionPage> {
             text: 'Regions',
             routeName: '/regions',
           ),
-          _buildDrawerItem(
-            context,
-            icon: Icons.search,
-            text: 'Search',
-            routeName: '/search',
-          ),
           Spacer(),
           Divider(),
           _buildDrawerItem(
@@ -263,13 +257,9 @@ class _RegionPageState extends State<RegionPage> {
                     height: 120,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                      color: Colors.green.withOpacity(0.3),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.image,
-                        color: Colors.white,
-                        size: 40,
+                      image: DecorationImage(
+                        image: AssetImage('assets/images/plant_placeholder.png'),
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),

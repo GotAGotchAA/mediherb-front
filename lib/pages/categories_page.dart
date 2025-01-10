@@ -163,12 +163,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
           ),
           _buildDrawerItem(
             context,
-            icon: Icons.search,
-            text: 'Search',
-            routeName: '/search',
-          ),
-          _buildDrawerItem(
-            context,
             icon: Icons.location_on,
             text: 'Regions', // New "Region" button
             routeName: '/regions', // Route to RegionPage
@@ -241,19 +235,15 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    height: 120,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                      color: Colors.green.withOpacity(0.3),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.image,
-                        color: Colors.white,
-                        size: 40,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                        image: DecorationImage(
+                          image: AssetImage('assets/images/plant_placeholder.png'),
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
-                  ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Text(

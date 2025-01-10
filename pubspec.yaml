@@ -31,7 +31,8 @@ flutter:
 
   # Define assets and fonts
   assets:
-    - assets/icons/            # Ensure this path is correct
+    - assets/icons/    
+    - assets/images/        # Ensure this path is correct
   fonts:
     - family: CustomFont
       fonts:

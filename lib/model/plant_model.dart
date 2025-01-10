@@ -1,14 +1,14 @@
 class PlantModel {
-  final int id;
-  final String name;
-  final String description;
-  final String properties;
-  final String uses;
-  final String precautions;
-  final String interactions;
-  final String region;
-  final String category;
-  final double price; // Add the price field
+  int id;
+  String name;
+  String description;
+  String properties;
+  String uses;
+  String precautions;
+  String interactions;
+  String region;
+  String category;
+  double price;
 
   PlantModel({
     required this.id,
@@ -20,7 +20,7 @@ class PlantModel {
     required this.interactions,
     required this.region,
     required this.category,
-    required this.price, // Include it in the constructor
+    required this.price,
   });
 
   factory PlantModel.fromJson(Map<String, dynamic> json) {
@@ -34,7 +34,7 @@ class PlantModel {
       interactions: json['interactions'] ?? '',
       region: json['region'] ?? '',
       category: json['category'] ?? '',
-      price: (json['price'] as num).toDouble(), // Safely cast to double
+      price: (json['price'] as num).toDouble(),
     );
   }
 }

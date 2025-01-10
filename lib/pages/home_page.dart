@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';  // Import for JSON decoding
-import 'package:http/http.dart' as http;
 import 'package:mediherb/model/plant_model.dart';
 import 'package:mediherb/services/api_service.dart';
 import 'package:mediherb/detail/ProductDetailPage.dart';
+import 'package:mediherb/pages/UserDetailPage.dart'; // Import UserDetailPage
 
 class HomePage extends StatefulWidget {
   @override
@@ -17,14 +16,12 @@ class _HomePageState extends State<HomePage> {
   List<PlantModel> filteredPlants = [];
   bool isLoading = true;
   TextEditingController _searchController = TextEditingController();
-  Map<String, dynamic>? userData;
 
   @override
   void initState() {
     super.initState();
     _getPlants();
     _searchController.addListener(_filterPlants);
-    _loadUserData();
   }
 
   @override
@@ -53,29 +50,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _loadUserData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('auth_token');
-    
-    if (token != null) {
-      final url = Uri.parse('http://localhost:8005/user/me');
-      
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-      
-      if (response.statusCode == 200) {
-        setState(() {
-          userData = json.decode(response.body);
-        });
-      }
-    }
-  }
-
   void _filterPlants() {
     String query = _searchController.text.toLowerCase();
     setState(() {
@@ -86,33 +60,56 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<String?> _getEmailFromPrefs() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('email');  // Retrieve email from SharedPreferences
+  }
+
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Medicinal Plants', style: TextStyle(color: Colors.green)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: Builder(
-          builder: (BuildContext context) {
-            return IconButton(
-              icon: Icon(Icons.menu, color: Colors.green),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            );
-          },
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Text(
+        'MediHerb',
+        style: TextStyle(
+          fontSize: 28.0,
+          fontWeight: FontWeight.bold,
+          color: Color.fromARGB(255, 25, 61, 14),
+          fontFamily: 'CustomFont',
         ),
+      ),
+      backgroundColor: Colors.white,
+      elevation: 0,
+      centerTitle: true,
+      leading: Builder(
+        builder: (BuildContext context) {
+          return IconButton(
+            icon: Icon(Icons.menu, color: Colors.green),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          );
+        },
+      ),
         actions: [
           IconButton(
             icon: SvgPicture.asset(
-              'assets/icons/search.svg',
+              'assets/icons/user.svg',
               color: Colors.green,
               height: 20,
             ),
-            onPressed: () {},
-          ),
+            onPressed: () async {
+              String? email = await _getEmailFromPrefs();
+              if (email != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserDetailPage(email: email),
+                  ),
+                );
+              }
+            },
+          )
         ],
       ),
       drawer: _buildDrawer(context),
@@ -124,14 +121,6 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSearchBar(),
-                  if (userData != null)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        'Welcome, ${userData!['name']}!',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                    ),
                   SizedBox(height: 20),
                   _buildPlantList(),
                 ],
@@ -149,29 +138,71 @@ class _HomePageState extends State<HomePage> {
             child: Center(
               child: Text(
                 'Menu',
-                style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
-          _buildDrawerItem(context, icon: Icons.home, text: 'Home', routeName: '/'),
-          _buildDrawerItem(context, icon: Icons.category, text: 'Categories', routeName: '/categories'),
-          _buildDrawerItem(context, icon: Icons.search, text: 'Search', routeName: '/search'),
-          _buildDrawerItem(context, icon: Icons.location_on, text: 'Region', routeName: '/regions'),
+          _buildDrawerItem(
+            context,
+            icon: Icons.home,
+            text: 'Home',
+            routeName: '/',
+          ),
+          _buildDrawerItem(
+            context,
+            icon: Icons.category,
+            text: 'Categories',
+            routeName: '/categories',
+          ),
+          _buildDrawerItem(
+            context,
+            icon: Icons.location_on,
+            text: 'Region',
+            routeName: '/regions',
+          ),
           Spacer(),
           Divider(),
-          _buildDrawerItem(context, icon: Icons.logout, text: 'Logout', routeName: '/login', isLogout: true),
+          _buildDrawerItem(
+            context,
+            icon: Icons.logout,
+            text: 'Logout',
+            routeName: '/login',
+            isLogout: true,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDrawerItem(BuildContext context, {required IconData icon, required String text, required String routeName, bool isLogout = false}) {
+  Widget _buildDrawerItem(
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+    required String routeName,
+    bool isLogout = false,
+  }) {
     return ListTile(
-      leading: Icon(icon, color: isLogout ? Colors.red : Colors.green),
-      title: Text(text, style: TextStyle(color: isLogout ? Colors.red : Colors.black)),
+      leading: Icon(
+        icon,
+        color: isLogout ? Colors.red : Colors.green,
+      ),
+      title: Text(
+        text,
+        style: TextStyle(
+          color: isLogout ? Colors.red : Colors.black,
+        ),
+      ),
       onTap: () {
         if (isLogout) {
-          Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false);
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            routeName,
+            (route) => false,
+          );
         } else {
           Navigator.pushNamed(context, routeName);
         }
@@ -185,7 +216,13 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 10, spreadRadius: 0)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            blurRadius: 10,
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: TextField(
         controller: _searchController,
@@ -223,39 +260,76 @@ class _HomePageState extends State<HomePage> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ProductDetailPage(plant: plant)),
+                MaterialPageRoute(
+                  builder: (context) => ProductDetailPage(plant: plant),
+                ),
               );
             },
             child: Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               elevation: 5,
               shadowColor: Colors.grey.withOpacity(0.2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Placeholder image handling
                   Container(
                     height: 120,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                      color: Colors.green.withOpacity(0.3),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
                     ),
-                    child: Center(child: Icon(Icons.image, color: Colors.white, size: 40)),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      child: Image.asset(
+                        'assets/images/plant_placeholder.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: Text(plant.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+                    child: Text(
+                      plant.name,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text(plant.category, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    child: Text(
+                      plant.category,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('\$${plant.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green)),
-                        Icon(Icons.favorite_border, color: Colors.green),
+                        Text(
+                          '\$${plant.price.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                        Icon(
+                          Icons.favorite_border,
+                          color: Colors.green,
+                        ),
                       ],
                     ),
                   ),

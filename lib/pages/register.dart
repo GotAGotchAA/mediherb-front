@@ -73,17 +73,37 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color.fromRGBO(240, 246, 229, 1),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SvgPicture.asset('assets/register.svg', height: 150),
+  return Scaffold(
+    backgroundColor: const Color.fromRGBO(240, 246, 229, 1),
+    body: Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Mediherb',
+                    style: TextStyle(
+                      fontSize: 28.0,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromARGB(255, 25, 61, 14),
+                      fontFamily: 'CustomFont',
+                    ),
+                  ),
+                  const SizedBox(width: 8.0),
+                  SvgPicture.asset(
+                    'assets/icons/plant.svg',
+                    height: 28.0,
+                    width: 28.0,
+                    color: Color.fromARGB(255, 25, 61, 14),
+                  ),
+                ],
+              ),
                 const SizedBox(height: 20.0),
                 TextFormField(
                   controller: _emailController,
